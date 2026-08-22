@@ -1,0 +1,23 @@
+# Build outputs
+android/android_clipper/app/build/
+android/android_clipper/.gradle/
+
+# Python
+__pycache__/
+*.pyc
+src/__pycache__/
+.venv/
+venv/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+clipboard_result.txt

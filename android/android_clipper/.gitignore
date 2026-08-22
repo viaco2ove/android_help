@@ -1,0 +1,21 @@
+# Build outputs
+android/android_clipper/app/build/
+android/android_clipper/.gradle/
+android/android_clipper/gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

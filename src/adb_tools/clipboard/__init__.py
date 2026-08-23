@@ -100,15 +100,22 @@ def copy_to_pc() -> bool:
 
     result = get_clipboard()
     if not result.success or not result.text:
-        print(f"Failed to get clipboard", file=sys.stderr)
+        print("Failed to get clipboard", file=sys.stderr)
         return False
 
     system = platform.system()
     try:
         if system == "Windows":
-            # Use PowerShell Set-Clipboard for proper UTF-8 support
-            ps_script = f'Set-Clipboard -Value "{result.text.replace("\"", "`\"")}"'
-            subprocess.run(["powershell", "-Command", ps_script], check=True)
+            import tempfile
+            # Write to temp file and use type command to pipe to clip
+            with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', suffix='.txt', delete=False) as f:
+                f.write(result.text)
+                temp_path = f.name
+            try:
+                subprocess.run(f'type "{temp_path}" | clip', shell=True, check=True)
+            finally:
+                import os
+                os.unlink(temp_path)
         elif system == "Darwin":
             subprocess.run(["pbcopy"], input=result.text.encode("utf-8"), check=True)
         else:

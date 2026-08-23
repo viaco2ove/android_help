@@ -256,10 +256,21 @@ def main():
         help="Text to set (required for 'set' action)",
     )
     parser.add_argument(
+        "-s", "--serial",
+        help="Android device serial number",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Output as JSON for scripting",
     )
+
+    args = parser.parse_args()
+
+    # Set device serial if specified
+    if args.serial:
+        import os
+        os.environ["ANDROID_SERIAL"] = args.serial
 
     args = parser.parse_args()
 

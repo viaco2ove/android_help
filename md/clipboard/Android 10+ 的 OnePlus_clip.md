@@ -47,6 +47,12 @@ python -m src.adb_tools.clipboard.clipboard copy-to-pc
 ```bash
 # 读
 adb shell content query --uri content://com.clipper.android_clipper.provider/clipboard
+adb devices
+List of devices attached
+3B65CS012RH00000        device
+emulator-5554   device
+adb -s 3B65CS012RH00000 shell content query --uri content://com.clipper.android_clipper.provider/clipboard
+adb -s 3B65CS012RH00000 shell "run-as com.clipper.android_clipper cat files/clipboard_data.txt"
 
 # 写
 adb shell content insert --uri content://com.clipper.android_clipper.provider/clipboard --bind text:s:Hello
@@ -59,5 +65,7 @@ adb shell content query --uri content://com.clipper.android_clipper.provider/cli
   
 # 直接读进 PC 粘贴板 python
 python -m src.adb_tools.clipboard.clipboard copy-to-pc
-
+python -m src.adb_tools.clipboard.clipboard -s 3B65CS012RH00000 copy-to-pc
+set ANDROID_SERIAL=3B65CS012RH00000
+python -m src.adb_tools.clipboard.clipboard copy-to-pc
 ```

@@ -7,7 +7,9 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.text.method.ScrollingMovementMethod
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
@@ -23,8 +25,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var radioGroupMode: RadioGroup
     private lateinit var radioClipboard: RadioButton
     private lateinit var radioInput: RadioButton
+    private lateinit var resizeHandle: View
 
     private var isInputMode = false
+    private var lastY = 0f
+    private val MIN_HEIGHT = 100
+    private var maxHeight = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,13 +42,44 @@ class MainActivity : AppCompatActivity() {
         radioGroupMode = findViewById(R.id.radioGroupMode)
         radioClipboard = findViewById(R.id.radioClipboard)
         radioInput = findViewById(R.id.radioInput)
+        resizeHandle = findViewById(R.id.resizeHandle)
 
-        // Enable EditText scrolling
-        editText.movementMethod = ScrollingMovementMethod()
+        // Get max height (half screen)
+        maxHeight = resources.displayMetrics.heightPixels / 2
+
+        // Enable text selection and scrolling
         editText.isVerticalScrollBarEnabled = true
+        editText.setTextIsSelectable(true)
 
         // Auto start clipboard service
         startClipboardService()
+
+        // Set up resize handle
+        resizeHandle.setOnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    lastY = event.rawY
+                    v.setBackgroundColor(0xFF999999.toInt())
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaY = event.rawY - lastY
+                    val newHeight = (editText.height + deltaY).toInt().coerceIn(MIN_HEIGHT, maxHeight)
+
+                    val params = editText.layoutParams
+                    params.height = newHeight
+                    editText.layoutParams = params
+
+                    lastY = event.rawY
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.setBackgroundColor(0xFFCCCCCC.toInt())
+                    true
+                }
+                else -> false
+            }
+        }
 
         // Set up mode switching
         radioGroupMode.setOnCheckedChangeListener { _, checkedId ->
@@ -55,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnPaste).setOnClickListener { pasteFromClipboard() }
         findViewById<Button>(R.id.btnClear).setOnClickListener { clearClipboard() }
         findViewById<Button>(R.id.btnFloating).setOnClickListener { showFloatingWindow() }
+        findViewById<Button>(R.id.btnSelectAll).setOnClickListener { selectAllText() }
 
         checkOverlayPermission()
         updateModeUI()
@@ -155,6 +193,12 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun selectAllText() {
+        editText.requestFocus()
+        editText.selectAll()
+        Toast.makeText(this, "已全选", Toast.LENGTH_SHORT).show()
     }
 
     private fun clearClipboard() {

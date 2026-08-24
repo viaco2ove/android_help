@@ -50,14 +50,24 @@
     <EditText
         android:id="@+id/editText"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="200dp"
         android:hint="输入内容（多行）"
         android:gravity="top|start"
-        android:inputType="textMultiLine"
+        android:inputType="textMultiLine|text"
         android:scrollbars="vertical"
+        android:textIsSelectable="true"
         android:background="@android:drawable/edit_text"
-        android:padding="8dp" />
+        android:padding="8dp"
+        android:focusable="true"
+        android:focusableInTouchMode="true" />
+
+    <!-- Resize handle -->
+    <View
+        android:id="@+id/resizeHandle"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:background="#CCCCCC"
+        android:layout_marginBottom="8dp" />
 
     <!-- Buttons -->
     <LinearLayout
@@ -79,6 +89,13 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="粘贴" />
+
+        <Button
+            android:id="@+id/btnSelectAll"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="全选" />
 
         <Button
             android:id="@+id/btnClear"

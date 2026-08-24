@@ -32,28 +32,45 @@ def _run_adb(command: list) -> tuple:
     return stdout, result.returncode
 
 
-def _read_clipboard_base64() -> Optional[str]:
-    cmd = f"run-as {PACKAGE_NAME} cat files/clipboard_data.txt | base64"
-    stdout, code = _run_adb(["adb", "shell", cmd])
+def _read_clipboard_via_content_provider() -> Optional[str]:
+    """Read clipboard via content provider (most reliable)."""
+    cmd = ["adb", "shell", "content", "query",
+           "--uri", f"content://{PACKAGE_NAME}.provider/clipboard",
+           "--projection", "text"]
+    stdout, code = _run_adb(cmd)
     if code == 0 and stdout.strip():
-        try:
-            data = base64.b64decode(stdout.strip())
-            return data.decode("utf-8", errors="replace")
-        except Exception:
-            return None
+        # Parse: text=内容 (content might contain spaces, commas, etc.)
+        import re
+        # Match text= followed by everything until the next column (timestamp=)
+        match = re.search(r'text=(.+?)(?:,\s*timestamp=|$)', stdout, re.DOTALL)
+        if match:
+            text = match.group(1).strip()
+            if text:
+                return text
+    return None
+
+
+def _read_clipboard_base64() -> Optional[str]:
+    """Fallback: read via run-as with hex encoding."""
+    cmd = f"run-as {PACKAGE_NAME} cat files/clipboard_data.txt"
+    stdout, code = _run_adb(["adb", "shell", cmd])
+    if code == 0:
+        return stdout if stdout else None
     return None
 
 
 def _write_clipboard_base64(text: str) -> bool:
-    encoded = base64.b64encode(text.encode("utf-8")).decode("ascii")
-    cmd = f"run-as {PACKAGE_NAME} sh -c 'echo {encoded} | base64 -d > files/clipboard_data.txt'"
-    _, code = _run_adb(["adb", "shell", cmd])
+    """Write via content provider."""
+    cmd = ["adb", "shell", "content", "insert",
+           "--uri", f"content://{PACKAGE_NAME}.provider/clipboard",
+           "--bind", f"text:s:{text}"]
+    _, code = _run_adb(cmd)
     return code == 0
 
 
 def _launch_app() -> None:
     _run_adb(["adb", "shell", "am", "start", "-n", f"{PACKAGE_NAME}/.MainActivity"])
-    _run_adb(["adb", "shell", "am", "startservice", "-n", f"{PACKAGE_NAME}/.FloatingService"])
+    _run_adb(["adb", "shell", "am", "startservice", "-n", f"{PACKAGE_NAME}/.ClipboardService"])
 
 
 class AndroidClipperProvider(ClipboardProvider):
@@ -68,13 +85,19 @@ class AndroidClipperProvider(ClipboardProvider):
     def get_clipboard(self) -> Optional[str]:
         if not self.is_available():
             return None
-        _launch_app()
+        # Ensure service is running first
+        _run_adb(["adb", "shell", "am", "startservice", "-n",
+                  f"{PACKAGE_NAME}/.ClipboardService"])
+        # Try content provider first (most reliable)
+        result = _read_clipboard_via_content_provider()
+        if result is not None:
+            return result
+        # Fallback to file-based
         return _read_clipboard_base64()
 
     def set_clipboard(self, text: str) -> bool:
         if not self.is_available():
             return False
-        _launch_app()
         return _write_clipboard_base64(text)
 
 

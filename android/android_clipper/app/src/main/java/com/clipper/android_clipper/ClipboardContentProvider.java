@@ -45,19 +45,34 @@ public class ClipboardContentProvider extends ContentProvider {
 
         if (uriMatcher.match(uri) == CLIPBOARD) {
             MatrixCursor cursor = new MatrixCursor(new String[]{"text", "timestamp"});
+            String text = "";
 
             try {
-                File file = getClipboardFile();
-                if (file.exists()) {
-                    FileInputStream fis = new FileInputStream(file);
-                    byte[] data = new byte[4096];
-                    int len = fis.read(data);
-                    fis.close();
-
-                    if (len > 0) {
-                        String content = new String(data, 0, len, "UTF-8");
-                        cursor.addRow(new Object[]{content, file.lastModified()});
+                // Try to get from system clipboard first
+                ClipboardManager cm = (ClipboardManager) getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                if (cm != null && cm.hasPrimaryClip()) {
+                    android.content.ClipData clip = cm.getPrimaryClip();
+                    if (clip != null && clip.getItemCount() > 0) {
+                        text = clip.getItemAt(0).coerceToText(getContext()).toString();
                     }
+                }
+
+                // If no system clipboard content, try reading from file
+                if (text.isEmpty()) {
+                    File file = getClipboardFile();
+                    if (file.exists() && file.length() > 0) {
+                        FileInputStream fis = new FileInputStream(file);
+                        byte[] data = new byte[4096];
+                        int len = fis.read(data);
+                        fis.close();
+                        if (len > 0) {
+                            text = new String(data, 0, len, "UTF-8");
+                        }
+                    }
+                }
+
+                if (!text.isEmpty()) {
+                    cursor.addRow(new Object[]{text, System.currentTimeMillis()});
                 }
             } catch (Exception e) {
                 // 忽略

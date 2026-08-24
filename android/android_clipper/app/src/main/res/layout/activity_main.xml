@@ -5,20 +5,61 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+    <!-- Mode selector -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <RadioGroup
+            android:id="@+id/radioGroupMode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/radioClipboard"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="粘贴板模式"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/radioInput"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="输入内容模式" />
+
+        </RadioGroup>
+    </LinearLayout>
+
+    <!-- Clipboard content display -->
     <TextView
         android:id="@+id/textClipboard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="剪贴板内容: "
         android:padding="8dp"
-        android:background="#f0f0f0" />
+        android:background="#f0f0f0"
+        android:layout_marginBottom="8dp" />
 
+    <!-- Multi-line EditText with scrollbar -->
     <EditText
         android:id="@+id/editText"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="输入内容" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:hint="输入内容（多行）"
+        android:gravity="top|start"
+        android:inputType="textMultiLine"
+        android:scrollbars="vertical"
+        android:background="@android:drawable/edit_text"
+        android:padding="8dp" />
 
+    <!-- Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

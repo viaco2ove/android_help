@@ -1,30 +1,90 @@
 package com.clipper.android_clipper
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.text.method.ScrollingMovementMethod
 import android.widget.Button
 import android.widget.EditText
+import android.widget.RadioButton
+import android.widget.RadioGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var editText: EditText
+    private lateinit var textClipboard: TextView
+    private lateinit var radioGroupMode: RadioGroup
+    private lateinit var radioClipboard: RadioButton
+    private lateinit var radioInput: RadioButton
+
+    private var isInputMode = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 自动启动剪贴板监听服务
+        // Initialize views
+        editText = findViewById(R.id.editText)
+        textClipboard = findViewById(R.id.textClipboard)
+        radioGroupMode = findViewById(R.id.radioGroupMode)
+        radioClipboard = findViewById(R.id.radioClipboard)
+        radioInput = findViewById(R.id.radioInput)
+
+        // Enable EditText scrolling
+        editText.movementMethod = ScrollingMovementMethod()
+        editText.isVerticalScrollBarEnabled = true
+
+        // Auto start clipboard service
         startClipboardService()
 
+        // Set up mode switching
+        radioGroupMode.setOnCheckedChangeListener { _, checkedId ->
+            isInputMode = checkedId == R.id.radioInput
+            updateModeUI()
+        }
+
+        // Set up buttons
         findViewById<Button>(R.id.btnCopy).setOnClickListener { copyToClipboard() }
         findViewById<Button>(R.id.btnPaste).setOnClickListener { pasteFromClipboard() }
         findViewById<Button>(R.id.btnClear).setOnClickListener { clearClipboard() }
         findViewById<Button>(R.id.btnFloating).setOnClickListener { showFloatingWindow() }
 
         checkOverlayPermission()
+        updateModeUI()
+    }
+
+    private fun updateModeUI() {
+        if (isInputMode) {
+            textClipboard.text = "当前模式: 输入内容"
+            editText.hint = "在此输入内容"
+        } else {
+            textClipboard.text = "当前模式: 粘贴板"
+            editText.hint = "输入内容（从剪贴板粘贴）"
+            // Refresh clipboard display
+            refreshClipboardDisplay()
+        }
+    }
+
+    private fun refreshClipboardDisplay() {
+        try {
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = clipboard.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val text = clip.getItemAt(0).coerceToText(this).toString()
+                if (text.isNotEmpty()) {
+                    textClipboard.text = "剪贴板内容: ${text.take(50)}${if (text.length > 50) "..." else ""}"
+                }
+            }
+        } catch (e: Exception) {
+            // ignore
+        }
     }
 
     private fun checkOverlayPermission() {
@@ -61,34 +121,52 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun copyToClipboard() {
-        val editText = findViewById<EditText>(R.id.editText)
         val text = editText.text.toString()
         if (text.isNotEmpty()) {
-            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            val clip = android.content.ClipData.newPlainText("Clipper", text)
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = ClipData.newPlainText("Clipper", text)
             clipboard.setPrimaryClip(clip)
             Toast.makeText(this, "已复制", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun pasteFromClipboard() {
-        val editText = findViewById<EditText>(R.id.editText)
-        val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-        val clip = clipboard.primaryClip
-        if (clip != null && clip.itemCount > 0) {
-            val text = clip.getItemAt(0).coerceToText(this).toString()
-            editText.setText(text)
+        if (isInputMode) {
+            // Input mode: just paste from clipboard
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = clipboard.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val text = clip.getItemAt(0).coerceToText(this).toString()
+                editText.setText(text)
+                textClipboard.text = "已粘贴到输入框"
+            } else {
+                Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            // Clipboard mode: read clipboard to input box
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+            val clip = clipboard.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val text = clip.getItemAt(0).coerceToText(this).toString()
+                editText.setText(text)
+                textClipboard.text = "剪贴板内容: ${text.take(50)}${if (text.length > 50) "..." else ""}"
+            } else {
+                textClipboard.text = "剪贴板内容: (空)"
+                Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
     private fun clearClipboard() {
-        val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+        val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             clipboard.clearPrimaryClip()
         } else {
-            val clip = android.content.ClipData.newPlainText("", "")
+            val clip = ClipData.newPlainText("", "")
             clipboard.setPrimaryClip(clip)
         }
+        editText.text.clear()
+        textClipboard.text = "剪贴板内容: (已清空)"
         Toast.makeText(this, "已清空", Toast.LENGTH_SHORT).show()
     }
 }

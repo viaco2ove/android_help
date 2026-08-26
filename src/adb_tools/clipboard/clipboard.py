@@ -359,6 +359,42 @@ def main():
         except Exception as e:
             print(f"Error: {e}", file=sys.stderr)
             return 1
+    elif args.action == "copy-edit-to-pc":
+        # Use provider-based get_clipboard from __init__.py
+        from . import get_clipboard as provider_get_clipboard
+        result = provider_get_clipboard()
+        if not result.success or not result.text:
+            print(f"Error: {result.error or 'clipboard is empty'}", file=sys.stderr)
+            return 1
+
+        import platform
+        import subprocess
+        system = platform.system()
+        try:
+            if system == "Windows":
+                # Use PowerShell to avoid encoding issues
+                import tempfile
+                import os
+                # Write to temp file with BOM for proper encoding
+                with tempfile.NamedTemporaryFile(mode='w', encoding='utf-16-le', suffix='.txt', delete=False) as f:
+                    f.write(result.text)
+                    temp_path = f.name
+                try:
+                    subprocess.run(f"cmd /c type \"{temp_path}\" | clip", shell=True, check=True)
+                finally:
+                    os.unlink(temp_path)
+            elif system == "Darwin":
+                subprocess.run("pbcopy", input=result.text.encode("utf-8"), check=True)
+            else:
+                subprocess.run("xclip", "-selection", "clipboard", input=result.text.encode("utf-8"), check=True)
+            print(f"Copied to PC clipboard ({len(result.text)} chars)")
+        except FileNotFoundError:
+            print(f"Error: clipboard tool not found", file=sys.stderr)
+            return 1
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+
 
     return 0
 

@@ -247,7 +247,7 @@ def main():
     parser = argparse.ArgumentParser(description="Android Clipboard via ADB")
     parser.add_argument(
         "action",
-        choices=["get", "set", "clear", "copy-to-pc"],
+        choices=["get", "set", "clear", "copy-to-pc", "copy-edit-to-pc"],
         help="Action to perform",
     )
     parser.add_argument(
@@ -360,11 +360,18 @@ def main():
             print(f"Error: {e}", file=sys.stderr)
             return 1
     elif args.action == "copy-edit-to-pc":
-        # Use provider-based get_clipboard from __init__.py
-        from . import get_clipboard as provider_get_clipboard
-        result = provider_get_clipboard()
-        if not result.success or not result.text:
-            print(f"Error: {result.error or 'clipboard is empty'}", file=sys.stderr)
+        # Get EditText content from Android Clipper app
+        from .providers.android_clipper import AndroidClipperProvider
+        provider = AndroidClipperProvider()
+        if not provider.is_available():
+            print("Error: Android Clipper app not installed", file=sys.stderr)
+            return 1
+
+        # Read EditText content
+        from .providers.android_clipper import _read_edit_text_via_content_provider
+        text = _read_edit_text_via_content_provider()
+        if not text:
+            print("Error: EditText is empty", file=sys.stderr)
             return 1
 
         import platform
@@ -372,22 +379,20 @@ def main():
         system = platform.system()
         try:
             if system == "Windows":
-                # Use PowerShell to avoid encoding issues
                 import tempfile
                 import os
-                # Write to temp file with BOM for proper encoding
                 with tempfile.NamedTemporaryFile(mode='w', encoding='utf-16-le', suffix='.txt', delete=False) as f:
-                    f.write(result.text)
+                    f.write(text)
                     temp_path = f.name
                 try:
                     subprocess.run(f"cmd /c type \"{temp_path}\" | clip", shell=True, check=True)
                 finally:
                     os.unlink(temp_path)
             elif system == "Darwin":
-                subprocess.run("pbcopy", input=result.text.encode("utf-8"), check=True)
+                subprocess.run("pbcopy", input=text.encode("utf-8"), check=True)
             else:
-                subprocess.run("xclip", "-selection", "clipboard", input=result.text.encode("utf-8"), check=True)
-            print(f"Copied to PC clipboard ({len(result.text)} chars)")
+                subprocess.run("xclip", "-selection", "clipboard", input=text.encode("utf-8"), check=True)
+            print(f"Copied EditText to PC clipboard ({len(text)} chars)")
         except FileNotFoundError:
             print(f"Error: clipboard tool not found", file=sys.stderr)
             return 1

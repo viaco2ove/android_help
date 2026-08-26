@@ -80,3 +80,14 @@ python -m src.adb_tools.clipboard.clipboard -s 3B65CS012RH00000 copy-to-pc
 set ANDROID_SERIAL=3B65CS012RH00000
 python -m src.adb_tools.clipboard.clipboard copy-to-pc
 ```
+
+# 直接读进 PC 粘贴板 python by editText
+```bash
+python -m src.adb_tools.clipboard.clipboard copy-edit-to-pc
+```
+
+```bash
+python -m src.adb_tools.clipboard.clipboard -s 3B65CS012RH00000 copy-edit-to-pc
+set ANDROID_SERIAL=3B65CS012RH00000
+python -m src.adb_tools.clipboard.clipboard copy-edit-to-pc
+```

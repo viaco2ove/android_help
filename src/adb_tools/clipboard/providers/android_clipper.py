@@ -33,7 +33,7 @@ def _run_adb(command: list) -> tuple:
 
 
 def _read_clipboard_via_content_provider() -> Optional[str]:
-    """Read clipboard via content provider (most reliable)."""
+    """Read clipboard via content provider (for when app is in foreground)."""
     cmd = ["adb", "shell", "content", "query",
            "--uri", f"content://{PACKAGE_NAME}.provider/clipboard",
            "--projection", "text"]
@@ -47,6 +47,18 @@ def _read_clipboard_via_content_provider() -> Optional[str]:
             text = match.group(1).strip()
             if text:
                 return text
+    return None
+
+
+def _read_clipboard_from_file() -> Optional[str]:
+    """Read clipboard from file (more reliable, works in background)."""
+    cmd = ["adb", "shell", f"run-as {PACKAGE_NAME} cat files/clipboard_data.txt"]
+    stdout, code = _run_adb(cmd)
+    if code == 0 and stdout:
+        content = stdout.strip()
+        # Return None for empty or very short content (likely garbage)
+        if content and len(content) > 1:
+            return content
     return None
 
 
@@ -85,15 +97,15 @@ class AndroidClipperProvider(ClipboardProvider):
     def get_clipboard(self) -> Optional[str]:
         if not self.is_available():
             return None
-        # Ensure service is running first
+        # Ensure service is running first (triggers save to file)
         _run_adb(["adb", "shell", "am", "startservice", "-n",
                   f"{PACKAGE_NAME}/.ClipboardService"])
-        # Try content provider first (most reliable)
-        result = _read_clipboard_via_content_provider()
+        # Try file-based reading first (most reliable for background access)
+        result = _read_clipboard_from_file()
         if result is not None:
             return result
-        # Fallback to file-based
-        return _read_clipboard_base64()
+        # Fallback to content provider (works when app is in foreground)
+        return _read_clipboard_via_content_provider()
 
     def set_clipboard(self, text: str) -> bool:
         if not self.is_available():

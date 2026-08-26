@@ -54,6 +54,8 @@ public class ClipboardContentProvider extends ContentProvider {
                     android.content.ClipData clip = cm.getPrimaryClip();
                     if (clip != null && clip.getItemCount() > 0) {
                         text = clip.getItemAt(0).coerceToText(getContext()).toString();
+                        // Also save to file for future access
+                        saveToFile(text);
                     }
                 }
 

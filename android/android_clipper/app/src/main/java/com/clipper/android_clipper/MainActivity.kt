@@ -17,6 +17,7 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import java.io.File
 
 class MainActivity : AppCompatActivity() {
 
@@ -164,7 +165,18 @@ class MainActivity : AppCompatActivity() {
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Clipper", text)
             clipboard.setPrimaryClip(clip)
+            // Also save to file directly so Python can read it
+            saveToFile(text)
             Toast.makeText(this, "已复制", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun saveToFile(text: String) {
+        try {
+            val file = File(filesDir, "clipboard_data.txt")
+            file.writeText(text)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

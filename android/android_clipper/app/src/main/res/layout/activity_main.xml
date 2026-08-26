@@ -6,35 +6,27 @@
     android:padding="16dp">
 
     <!-- Mode selector -->
-    <LinearLayout
+    <RadioGroup
+        android:id="@+id/radioGroupMode"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="8dp">
+        android:orientation="horizontal">
 
-        <RadioGroup
-            android:id="@+id/radioGroupMode"
-            android:layout_width="match_parent"
+        <RadioButton
+            android:id="@+id/radioClipboard"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:layout_weight="1"
+            android:text="粘贴板模式"
+            android:checked="true" />
 
-            <RadioButton
-                android:id="@+id/radioClipboard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="粘贴板模式"
-                android:checked="true" />
-
-            <RadioButton
-                android:id="@+id/radioInput"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="输入内容模式" />
-
-        </RadioGroup>
-    </LinearLayout>
+        <RadioButton
+            android:id="@+id/radioInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="输入内容模式" />
+    </RadioGroup>
 
     <!-- Clipboard content display -->
     <TextView
@@ -42,16 +34,58 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="剪贴板内容: "
-        android:padding="8dp"
+        android:padding="4dp"
         android:background="#f0f0f0"
-        android:layout_marginBottom="8dp" />
+        android:textSize="12sp" />
 
-    <!-- Multi-line EditText with scrollbar -->
+    <!-- Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp">
+
+        <Button
+            android:id="@+id/btnCopy"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="复制"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnPaste"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="粘贴"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnClear"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="清空"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnFloating"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="悬浮窗"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <!-- Multi-line EditText -->
     <EditText
         android:id="@+id/editText"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:hint="输入内容（多行）"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:hint="输入内容"
         android:gravity="top|start"
         android:inputType="textMultiLine|text"
         android:scrollbars="vertical"
@@ -60,56 +94,5 @@
         android:padding="8dp"
         android:focusable="true"
         android:focusableInTouchMode="true" />
-
-    <!-- Resize handle -->
-    <View
-        android:id="@+id/resizeHandle"
-        android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:background="#CCCCCC"
-        android:layout_marginBottom="8dp" />
-
-    <!-- Buttons -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp">
-
-        <Button
-            android:id="@+id/btnCopy"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="复制" />
-
-        <Button
-            android:id="@+id/btnPaste"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="粘贴" />
-
-        <Button
-            android:id="@+id/btnSelectAll"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="全选" />
-
-        <Button
-            android:id="@+id/btnClear"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="清空" />
-
-        <Button
-            android:id="@+id/btnFloating"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="悬浮窗" />
-    </LinearLayout>
 
 </LinearLayout>

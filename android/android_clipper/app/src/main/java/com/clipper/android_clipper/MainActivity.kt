@@ -7,9 +7,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
@@ -26,12 +25,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var radioGroupMode: RadioGroup
     private lateinit var radioClipboard: RadioButton
     private lateinit var radioInput: RadioButton
-    private lateinit var resizeHandle: View
 
     private var isInputMode = false
-    private var lastY = 0f
-    private val MIN_HEIGHT = 100
-    private var maxHeight = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,44 +38,23 @@ class MainActivity : AppCompatActivity() {
         radioGroupMode = findViewById(R.id.radioGroupMode)
         radioClipboard = findViewById(R.id.radioClipboard)
         radioInput = findViewById(R.id.radioInput)
-        resizeHandle = findViewById(R.id.resizeHandle)
-
-        // Get max height (half screen)
-        maxHeight = resources.displayMetrics.heightPixels / 2
 
         // Enable text selection and scrolling
         editText.isVerticalScrollBarEnabled = true
         editText.setTextIsSelectable(true)
 
+        // Auto save EditText content to file (for ContentProvider to read)
+        editText.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                // Save EditText content to edit_text_data.txt
+                saveEditTextToFile(s.toString())
+            }
+        })
+
         // Auto start clipboard service
         startClipboardService()
-
-        // Set up resize handle
-        resizeHandle.setOnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    lastY = event.rawY
-                    v.setBackgroundColor(0xFF999999.toInt())
-                    true
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    val deltaY = event.rawY - lastY
-                    val newHeight = (editText.height + deltaY).toInt().coerceIn(MIN_HEIGHT, maxHeight)
-
-                    val params = editText.layoutParams
-                    params.height = newHeight
-                    editText.layoutParams = params
-
-                    lastY = event.rawY
-                    true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    v.setBackgroundColor(0xFFCCCCCC.toInt())
-                    true
-                }
-                else -> false
-            }
-        }
 
         // Set up mode switching
         radioGroupMode.setOnCheckedChangeListener { _, checkedId ->
@@ -93,7 +67,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnPaste).setOnClickListener { pasteFromClipboard() }
         findViewById<Button>(R.id.btnClear).setOnClickListener { clearClipboard() }
         findViewById<Button>(R.id.btnFloating).setOnClickListener { showFloatingWindow() }
-        findViewById<Button>(R.id.btnSelectAll).setOnClickListener { selectAllText() }
 
         checkOverlayPermission()
         updateModeUI()
@@ -106,7 +79,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             textClipboard.text = "当前模式: 粘贴板"
             editText.hint = "输入内容（从剪贴板粘贴）"
-            // Refresh clipboard display
             refreshClipboardDisplay()
         }
     }
@@ -165,13 +137,13 @@ class MainActivity : AppCompatActivity() {
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText("Clipper", text)
             clipboard.setPrimaryClip(clip)
-            // Also save to file directly so Python can read it
-            saveToFile(text)
+            // Also save to clipboard file
+            saveClipboardToFile(text)
             Toast.makeText(this, "已复制", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun saveToFile(text: String) {
+    private fun saveClipboardToFile(text: String) {
         try {
             val file = File(filesDir, "clipboard_data.txt")
             file.writeText(text)
@@ -180,9 +152,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun saveEditTextToFile(text: String) {
+        try {
+            val file = File(filesDir, "edit_text_data.txt")
+            file.writeText(text)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun pasteFromClipboard() {
         if (isInputMode) {
-            // Input mode: just paste from clipboard
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val clip = clipboard.primaryClip
             if (clip != null && clip.itemCount > 0) {
@@ -193,7 +173,6 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
             }
         } else {
-            // Clipboard mode: read clipboard to input box
             val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
             val clip = clipboard.primaryClip
             if (clip != null && clip.itemCount > 0) {
@@ -205,12 +184,6 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show()
             }
         }
-    }
-
-    private fun selectAllText() {
-        editText.requestFocus()
-        editText.selectAll()
-        Toast.makeText(this, "已全选", Toast.LENGTH_SHORT).show()
     }
 
     private fun clearClipboard() {

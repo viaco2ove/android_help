@@ -47,6 +47,7 @@ python -m src.adb_tools.clipboard.clipboard copy-to-pc
 ```bash
 # 读
 adb shell content query --uri content://com.clipper.android_clipper.provider/clipboard
+adb shell content query --uri content://com.clipper.android_clipper.provider/edit_text
 ```
 ```bash
 adb devices

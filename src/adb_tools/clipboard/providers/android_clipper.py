@@ -50,6 +50,22 @@ def _read_clipboard_via_content_provider() -> Optional[str]:
     return None
 
 
+def _read_edit_text_via_content_provider() -> Optional[str]:
+    """Read EditText content via content provider."""
+    cmd = ["adb", "shell", "content", "query",
+           "--uri", f"content://{PACKAGE_NAME}.provider/edit_text",
+           "--projection", "text"]
+    stdout, code = _run_adb(cmd)
+    if code == 0 and stdout.strip():
+        import re
+        match = re.search(r'text=(.+?)(?:,\s*timestamp=|$)', stdout, re.DOTALL)
+        if match:
+            text = match.group(1).strip()
+            if text:
+                return text
+    return None
+
+
 def _read_clipboard_from_file() -> Optional[str]:
     """Read clipboard from file (more reliable, works in background)."""
     cmd = ["adb", "shell", f"run-as {PACKAGE_NAME} cat files/clipboard_data.txt"]
@@ -95,16 +111,21 @@ class AndroidClipperProvider(ClipboardProvider):
         return _check_package_installed(PACKAGE_NAME)
 
     def get_clipboard(self) -> Optional[str]:
+        """Get content - try EditText first (input mode), then clipboard."""
         if not self.is_available():
             return None
         # Ensure service is running first (triggers save to file)
         _run_adb(["adb", "shell", "am", "startservice", "-n",
                   f"{PACKAGE_NAME}/.ClipboardService"])
-        # Try file-based reading first (most reliable for background access)
+        # Try EditText first (user input mode)
+        result = _read_edit_text_via_content_provider()
+        if result:
+            return result
+        # Try file-based reading (clipboard mode)
         result = _read_clipboard_from_file()
         if result is not None:
             return result
-        # Fallback to content provider (works when app is in foreground)
+        # Fallback to content provider clipboard
         return _read_clipboard_via_content_provider()
 
     def set_clipboard(self, text: str) -> bool:
